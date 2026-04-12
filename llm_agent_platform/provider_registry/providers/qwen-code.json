@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "provider_id": "qwen-code",
+  "route_name": "qwen-code",
+  "display_name": "Qwen Code",
+  "auth": {
+    "kind": "qwen-oauth",
+    "requirements": ["accounts_config", "refresh_token"]
+  },
+  "transport": {
+    "kind": "openai-compatible",
+    "runtime_adapter": "qwen_code"
+  },
+  "catalog": {
+    "bootstrap": {
+      "models": [
+        {
+          "model_id": "coder-model",
+          "display_name": "Qwen Coder Model",
+          "capabilities": ["chat", "streaming", "tools"],
+          "lifecycle": "ga",
+          "upstream_id": "coder-model",
+          "metadata": {
+            "provider_id": "qwen-code",
+            "transport": "openai-compatible",
+            "billing_profile": "oauth"
+          }
+        }
+      ]
+    },
+    "discovery": {
+      "enabled": false
+    },
+    "cache": {
+      "snapshot_enabled": false
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "model": "gemini-3-flash-preview",
+  "project": "demo-project",
+  "user_prompt_id": "<user_prompt_id>",
+  "request": {
+    "contents": [
+      {
+        "role": "user",
+        "parts": [
+          {
+            "text": "hello parity"
+          }
+        ]
+      }
+    ],
+    "generationConfig": {
+      "temperature": 0.7,
+      "topP": 1.0,
+      "topK": 40
+    },
+    "session_id": "<session_id>"
+  }
+}

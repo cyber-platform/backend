@@ -1,0 +1,46 @@
+# Ignore secrets - should be mounted at runtime
+secrets/
+.env
+
+# Ignore other project directories
+gemini-cli/
+kilocode/
+qwen-code/
+
+# Ignore documentation
+docs/
+
+# Ignore git metadata for subdirectories (if any)
+gemini-cli/.git
+kilocode/.git
+
+# Ignore any test files or build artifacts in subdirectories
+**/node_modules/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.pytest_cache/
+**/venv/
+**/env/
+**/.venv/
+**/dist/
+**/build/
+**/coverage/
+
+# Ignore IDE files in subdirectories
+**/.vscode/
+**/.idea/
+**/*.swp
+**/*.swo
+**/*~
+
+# Ignore log files
+*.log
+logs/
+
+# Ignore temporary files
+tmp/
+temp/
+.DS_Store
+Thumbs.db

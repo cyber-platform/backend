@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "providers": [
+    {"descriptor_path": "providers/gemini-cli.json"},
+    {"descriptor_path": "providers/google-vertex.json"},
+    {"descriptor_path": "providers/qwen-code.json"},
+    {"descriptor_path": "providers/openai-chatgpt.json"}
+  ]
+}

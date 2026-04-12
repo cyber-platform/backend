@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "provider_id": "gemini-cli",
+  "route_name": "gemini-cli",
+  "display_name": "Gemini CLI",
+  "auth": {
+    "kind": "gemini-oauth",
+    "requirements": ["accounts_config", "refresh_token", "project_id"]
+  },
+  "transport": {
+    "kind": "quota",
+    "runtime_adapter": "gemini_cli"
+  },
+  "catalog": {
+    "bootstrap": {
+      "models": [
+        {
+          "model_id": "gemini-3.1-pro-preview",
+          "display_name": "Gemini 3.1 Pro Preview",
+          "capabilities": ["chat", "streaming", "tools"],
+          "lifecycle": "preview",
+          "upstream_id": "gemini-3.1-pro-preview",
+          "metadata": {
+            "provider_id": "gemini-cli",
+            "transport": "quota",
+            "billing_profile": "oauth"
+          }
+        },
+        {
+          "model_id": "gemini-3-flash-preview",
+          "display_name": "Gemini 3 Flash Preview",
+          "capabilities": ["chat", "streaming", "tools"],
+          "lifecycle": "preview",
+          "upstream_id": "gemini-3-flash-preview",
+          "metadata": {
+            "provider_id": "gemini-cli",
+            "transport": "quota",
+            "billing_profile": "oauth"
+          }
+        },
+        {
+          "model_id": "gemini-2.5-pro",
+          "display_name": "Gemini 2.5 Pro",
+          "capabilities": ["chat", "streaming", "tools"],
+          "lifecycle": "ga",
+          "upstream_id": "gemini-2.5-pro",
+          "metadata": {
+            "provider_id": "gemini-cli",
+            "transport": "quota",
+            "billing_profile": "oauth"
+          }
+        },
+        {
+          "model_id": "gemini-2.5-flash",
+          "display_name": "Gemini 2.5 Flash",
+          "capabilities": ["chat", "streaming", "tools"],
+          "lifecycle": "ga",
+          "upstream_id": "gemini-2.5-flash",
+          "metadata": {
+            "provider_id": "gemini-cli",
+            "transport": "quota",
+            "billing_profile": "oauth"
+          }
+        },
+        {
+          "model_id": "gemini-2.5-flash-lite",
+          "display_name": "Gemini 2.5 Flash Lite",
+          "capabilities": ["chat", "streaming", "tools"],
+          "lifecycle": "ga",
+          "upstream_id": "gemini-2.5-flash-lite",
+          "metadata": {
+            "provider_id": "gemini-cli",
+            "transport": "quota",
+            "billing_profile": "oauth"
+          }
+        }
+      ]
+    },
+    "discovery": {
+      "enabled": false
+    },
+    "cache": {
+      "snapshot_enabled": false
+    }
+  }
+}

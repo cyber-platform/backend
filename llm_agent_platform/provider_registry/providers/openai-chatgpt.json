@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "provider_id": "openai-chatgpt",
+  "route_name": "openai-chatgpt",
+  "display_name": "OpenAI ChatGPT",
+  "auth": {
+    "kind": "openai-oauth",
+    "requirements": ["oauth_state"],
+    "metadata": {
+      "oauth_state_path": "openai-chatgpt/auth/oauth-account.json",
+      "usage_state_path": "openai-chatgpt/usage/limits.json",
+      "research_dependency_task": "operational_scope/tasks/031-openai-codex-oauth-and-usage-research.md"
+    }
+  },
+  "transport": {
+    "kind": "openai-private-backend",
+    "runtime_adapter": "openai_chatgpt",
+    "metadata": {
+      "backend_base_url_env": "OPENAI_CHATGPT_BACKEND_BASE_URL",
+      "responses_path": "/responses",
+      "usage_url_env": "OPENAI_CHATGPT_USAGE_URL",
+      "user_agent_env": "OPENAI_CHATGPT_USER_AGENT",
+      "originator_env": "OPENAI_CHATGPT_ORIGINATOR"
+    }
+  },
+  "catalog": {
+    "bootstrap": {
+      "models": [
+        {
+          "model_id": "gpt-5.4",
+          "display_name": "GPT-5.4",
+          "capabilities": ["chat", "streaming", "tools"],
+          "lifecycle": "ga",
+          "upstream_id": "gpt-5.4",
+          "metadata": {
+            "provider_id": "openai-chatgpt",
+            "transport": "openai-private-backend",
+            "auth_profile": "oauth-runtime"
+          }
+        },
+        {
+          "model_id": "gpt-5.4-mini",
+          "display_name": "GPT-5.4 Mini",
+          "capabilities": ["chat", "streaming", "tools"],
+          "lifecycle": "ga",
+          "upstream_id": "gpt-5.4-mini",
+          "metadata": {
+            "provider_id": "openai-chatgpt",
+            "transport": "openai-private-backend",
+            "auth_profile": "oauth-runtime"
+          }
+        },
+        {
+          "model_id": "gpt-5.3-codex",
+          "display_name": "GPT-5.3 Codex",
+          "capabilities": ["chat", "streaming", "tools"],
+          "lifecycle": "ga",
+          "upstream_id": "gpt-5.3-codex",
+          "metadata": {
+            "provider_id": "openai-chatgpt",
+            "transport": "openai-private-backend",
+            "auth_profile": "oauth-runtime"
+          }
+        },
+        {
+          "model_id": "gpt-5.2-codex",
+          "display_name": "GPT-5.2 Codex",
+          "capabilities": ["chat", "streaming", "tools"],
+          "lifecycle": "ga",
+          "upstream_id": "gpt-5.2-codex",
+          "metadata": {
+            "provider_id": "openai-chatgpt",
+            "transport": "openai-private-backend",
+            "auth_profile": "oauth-runtime"
+          }
+        },
+        {
+          "model_id": "gpt-5.2",
+          "display_name": "GPT-5.2",
+          "capabilities": ["chat", "streaming", "tools"],
+          "lifecycle": "ga",
+          "upstream_id": "gpt-5.2",
+          "metadata": {
+            "provider_id": "openai-chatgpt",
+            "transport": "openai-private-backend",
+            "auth_profile": "oauth-runtime"
+          }
+        },
+        {
+          "model_id": "gpt-5.1-codex-max",
+          "display_name": "GPT-5.1 Codex Max",
+          "capabilities": ["chat", "streaming", "tools"],
+          "lifecycle": "ga",
+          "upstream_id": "gpt-5.1-codex-max",
+          "metadata": {
+            "provider_id": "openai-chatgpt",
+            "transport": "openai-private-backend",
+            "auth_profile": "oauth-runtime"
+          }
+        },
+        {
+          "model_id": "gpt-5.1-codex-mini",
+          "display_name": "GPT-5.1 Codex Mini",
+          "capabilities": ["chat", "streaming", "tools"],
+          "lifecycle": "ga",
+          "upstream_id": "gpt-5.1-codex-mini",
+          "metadata": {
+            "provider_id": "openai-chatgpt",
+            "transport": "openai-private-backend",
+            "auth_profile": "oauth-runtime"
+          }
+        }
+      ]
+    }
+  }
+}
