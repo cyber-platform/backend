@@ -9,4 +9,5 @@ dependencies = [
     "google-auth>=2.48.0",
     "google-auth-oauthlib>=1.2.4",
     "httpx[http2]>=0.28.1",
+    "python-jose>=3.5.0",
 ]

@@ -65,6 +65,9 @@ OPENAI_CHATGPT_API_KEYS_REGISTRY_PATH = _env_str(
     "OPENAI_CHATGPT_API_KEYS_REGISTRY_PATH",
     "secrets/openai-chatgpt/api-keys/registry.json",
 )
+JWT_SHARED_SECRET = _env_str("JWT_SHARED_SECRET")
+JWT_ISSUER = _env_str("JWT_ISSUER", "user_service")
+JWT_ALGORITHM = _env_str("JWT_ALGORITHM", "HS256")
 SERVICE_BEHAVIOR_CONFIG_PATH = _env_str(
     "SERVICE_BEHAVIOR_CONFIG_PATH",
     "service_behavior_config.yaml",

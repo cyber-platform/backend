@@ -1,5 +1,10 @@
 from flask import Blueprint, jsonify, request
 
+from llm_agent_platform.api.admin.auth_guard import (
+    AdminAuthError,
+    authorize_admin_request,
+    create_admin_auth_error,
+)
 from llm_agent_platform.services.openai_chatgpt_api_keys import (
     ApiKeyNotFoundError,
     ApiKeyRegistryError,
@@ -14,6 +19,14 @@ from llm_agent_platform.services.openai_chatgpt_admin_monitoring import (
 from llm_agent_platform.services.account_router import AccountRouterError
 
 admin_bp = Blueprint("admin", __name__)
+
+
+@admin_bp.before_request
+def require_admin_auth():
+    try:
+        authorize_admin_request()
+    except AdminAuthError as exc:
+        return create_admin_auth_error(exc)
 
 
 def _registry_service() -> OpenAIChatGPTApiKeyRegistryService:

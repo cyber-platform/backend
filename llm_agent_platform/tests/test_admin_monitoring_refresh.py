@@ -18,6 +18,7 @@ from llm_agent_platform.services.openai_chatgpt_admin_monitoring import (
     get_usage_windows,
     reset_monitoring_caches,
 )
+from llm_agent_platform.tests.admin_auth_test_utils import install_admin_client_auth
 
 SECRETS_TEST_ROOT = Path("secrets_test")
 
@@ -32,6 +33,7 @@ def _tmp_state_dir():
 class AdminMonitoringRefreshTests(unittest.TestCase):
     def setUp(self):
         self.client = app.test_client()
+        install_admin_client_auth(self, self.client)
         quota_account_router._state.clear()
         quota_account_router._preferred_account_overrides.clear()
         reset_monitoring_caches()
