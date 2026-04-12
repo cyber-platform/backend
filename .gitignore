@@ -1,7 +1,25 @@
+# ignore environment variable files
 .env
-.venv/
+secrets_test
+
+# Python-generated files
 __pycache__/
 *.py[oc]
 build/
 dist/
+wheels/
 *.egg-info
+
+# Virtual environments
+.venv
+
+# Linter's cache
+.ruff_cache
+
+# Logs
+logs/
+
+# Nested Git repositories
+.kilo/
+kilo.jsonc
+.vscode

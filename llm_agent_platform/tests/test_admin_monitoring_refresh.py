@@ -8,6 +8,7 @@ import tempfile
 import time
 import unittest
 from contextlib import contextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -114,6 +115,40 @@ class AdminMonitoringRefreshTests(unittest.TestCase):
             self._openai_accounts_config(str(creds_a), str(creds_b)),
         )
         return accounts_config_path
+
+    def _seed_quota_exhausted_account_state(
+        self, tmp_dir: Path, account_name: str
+    ) -> None:
+        self._write_json(
+            tmp_dir
+            / "openai-chatgpt"
+            / "accounts"
+            / account_name
+            / "account_state.json",
+            {
+                "version": 1,
+                "quota_exhausted": {
+                    "keys": {
+                        "__provider__": datetime.now(tz=timezone.utc)
+                        .isoformat()
+                        .replace("+00:00", "Z")
+                    }
+                },
+            },
+        )
+
+    @staticmethod
+    def _account_by_name(described: dict, account_name: str) -> dict:
+        accounts = described.get("accounts")
+        if not isinstance(accounts, list):
+            raise AssertionError("accounts payload is missing")
+        for account in accounts:
+            if (
+                isinstance(account, dict)
+                and account.get("account_name") == account_name
+            ):
+                return account
+        raise AssertionError(f"account '{account_name}' not found")
 
     def _poll_terminal_status(
         self, refresh_id: str, timeout_seconds: float = 2.0
@@ -462,6 +497,84 @@ class AdminMonitoringRefreshTests(unittest.TestCase):
         self.assertEqual(runtime_usage["refresh"]["status"], "fresh")
         self.assertEqual(acct_1["short_window"]["used_percent"], 61.0)
         self.assertEqual(persisted_usage["short_window"]["used_percent"], 7.0)
+
+    def test_refresh_clears_router_quota_block_when_long_window_resets(self):
+        with _tmp_state_dir() as tmp_dir:
+            accounts_config_path = self._seed_files(tmp_dir)
+            self._seed_quota_exhausted_account_state(tmp_dir, "acct-1")
+
+            def fetch_snapshot(_adapter_self):
+                return {
+                    "version": 1,
+                    "provider_id": "openai-chatgpt",
+                    "as_of": "2026-01-02T00:00:00Z",
+                    "limits": {
+                        "primary": {"used_percent": 21, "window": "60m"},
+                        "secondary": {"used_percent": 0.05, "window": "10080m"},
+                    },
+                }
+
+            with (
+                self._patched_paths(tmp_dir, accounts_config_path),
+                patch(
+                    "llm_agent_platform.services.openai_chatgpt_admin_monitoring.OpenAIChatGptUsageLimitsAdapter.fetch_snapshot",
+                    new=fetch_snapshot,
+                ),
+            ):
+                before = quota_account_router.describe_group("openai-chatgpt", "team-a")
+                response = self.client.post("/admin/monitoring/openai-chatgpt/refresh")
+                payload = self._poll_terminal_status(response.get_json()["refresh_id"])
+                after = quota_account_router.describe_group("openai-chatgpt", "team-a")
+
+            persisted_state = json.loads(
+                (
+                    tmp_dir
+                    / "openai-chatgpt"
+                    / "accounts"
+                    / "acct-1"
+                    / "account_state.json"
+                ).read_text(encoding="utf-8")
+            )
+
+        before_acct_1 = self._account_by_name(before, "acct-1")
+        after_acct_1 = self._account_by_name(after, "acct-1")
+
+        self.assertEqual(before_acct_1["state"], "quota_blocked")
+        self.assertEqual(payload["status"], "completed")
+        self.assertEqual(after_acct_1["state"], "ready")
+        self.assertNotIn("quota_exhausted", persisted_state)
+
+    def test_refresh_keeps_router_quota_block_at_threshold_value(self):
+        with _tmp_state_dir() as tmp_dir:
+            accounts_config_path = self._seed_files(tmp_dir)
+            self._seed_quota_exhausted_account_state(tmp_dir, "acct-1")
+
+            def fetch_snapshot(_adapter_self):
+                return {
+                    "version": 1,
+                    "provider_id": "openai-chatgpt",
+                    "as_of": "2026-01-02T00:00:00Z",
+                    "limits": {
+                        "primary": {"used_percent": 21, "window": "60m"},
+                        "secondary": {"used_percent": 0.1, "window": "10080m"},
+                    },
+                }
+
+            with (
+                self._patched_paths(tmp_dir, accounts_config_path),
+                patch(
+                    "llm_agent_platform.services.openai_chatgpt_admin_monitoring.OpenAIChatGptUsageLimitsAdapter.fetch_snapshot",
+                    new=fetch_snapshot,
+                ),
+            ):
+                response = self.client.post("/admin/monitoring/openai-chatgpt/refresh")
+                payload = self._poll_terminal_status(response.get_json()["refresh_id"])
+                after = quota_account_router.describe_group("openai-chatgpt", "team-a")
+
+        after_acct_1 = self._account_by_name(after, "acct-1")
+
+        self.assertEqual(payload["status"], "completed")
+        self.assertEqual(after_acct_1["state"], "quota_blocked")
 
 
 if __name__ == "__main__":

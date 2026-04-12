@@ -420,6 +420,11 @@ class _MonitoringRefreshManager:
             _persist_usage_windows(account_name, normalized)
         except Exception:
             pass
+        if _should_clear_router_quota_block(normalized):
+            quota_account_router.clear_account_quota_exhausted(
+                PROVIDER_ID,
+                account_name,
+            )
 
     def _mark_account_result(
         self,
@@ -829,6 +834,24 @@ def _store_runtime_request_usage(
         _runtime_state.hydrated_accounts.add(account_name)
         _runtime_state.initialized = True
     return normalized
+
+
+def _should_clear_router_quota_block(payload: dict[str, Any]) -> bool:
+    refresh = payload.get("refresh")
+    if not isinstance(refresh, dict):
+        return False
+    if str(refresh.get("status") or "") != "fresh":
+        return False
+
+    long_window = payload.get("long_window")
+    if not isinstance(long_window, dict):
+        return False
+
+    try:
+        used_percent = float(long_window.get("used_percent", 0) or 0)
+    except (TypeError, ValueError):
+        return False
+    return used_percent < 0.1
 
 
 def _persist_usage_windows(account_name: str, payload: dict[str, Any]) -> None:

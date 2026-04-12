@@ -636,6 +636,43 @@ class QuotaAccountRouter:
                 "accounts": accounts_payload,
             }
 
+    def clear_account_quota_exhausted(
+        self,
+        provider: str,
+        account_name: str,
+    ) -> None:
+        provider = self._normalize_provider_id(provider)
+        cfg = self._load_provider_config(provider)
+        self._require_account(cfg, account_name)
+
+        with self._lock:
+            affected_groups: list[tuple[str, _ProviderState, list[str]]] = []
+            for (state_provider, group_id), state in self._state.items():
+                if state_provider != provider:
+                    continue
+                pool = self._resolve_pool(cfg, group_id)
+                if account_name not in pool:
+                    continue
+                self._ensure_pool_hydrated_unlocked(cfg, state, pool)
+                self._cleanup_state_unlocked(state, cfg)
+                state.consecutive_quota_exhausted_errors[account_name] = 0
+                state.quota_exhausted_at.pop(account_name, None)
+                affected_groups.append((group_id, state, pool))
+
+            paths = self._state_paths(cfg.provider, account_name)
+            persisted = load_account_state(paths)
+            persisted.quota_exhausted_at = {}
+            save_account_state(paths, persisted, writer=None)
+
+            for group_id, state, pool in affected_groups:
+                self._enqueue_group_snapshot_unlocked(
+                    cfg,
+                    state,
+                    pool,
+                    group_id,
+                    model=None,
+                )
+
     def _all_exhausted(
         self,
         state: _ProviderState,
