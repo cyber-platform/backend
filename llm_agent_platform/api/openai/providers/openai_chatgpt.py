@@ -206,11 +206,11 @@ def _map_reasoning_effort(raw_value: Any) -> str | None:
     if not isinstance(raw_value, str):
         return None
     normalized = raw_value.strip().lower()
-    if normalized in {"low", "medium", "high"}:
-        return normalized
-    if normalized in {"none", "disable", "disabled", "off"}:
+    if not normalized:
         return None
-    return None
+    if normalized in {"disable", "disabled", "off"}:
+        return "none"
+    return normalized
 
 
 def _usage_from_payload(payload: dict[str, Any]) -> dict[str, Any]:
@@ -560,7 +560,12 @@ class OpenAIChatGPTProvider(Provider):
         model_override: str | None = None,
     ) -> UpstreamRequestContext:
         instructions = (ctx.system_instruction or "You are Kilo Code.").strip()
-        reasoning_effort = _map_reasoning_effort(ctx.data.get("reasoning_effort"))
+        effective_request_params = ctx.effective_request_params or {}
+        reasoning_effort = _map_reasoning_effort(
+            effective_request_params.get(
+                "reasoning_effort", ctx.data.get("reasoning_effort")
+            )
+        )
         payload: dict[str, Any] = {
             "model": model_override or ctx.target_model,
             "stream": bool(ctx.stream),
@@ -569,8 +574,9 @@ class OpenAIChatGPTProvider(Provider):
             "input": _messages_to_input(ctx.messages),
         }
 
-        if reasoning_effort:
-            payload["include"] = ["reasoning.encrypted_content"]
+        if reasoning_effort is not None:
+            if reasoning_effort != "none":
+                payload["include"] = ["reasoning.encrypted_content"]
             payload["reasoning"] = {
                 "effort": reasoning_effort,
                 "summary": "auto",
