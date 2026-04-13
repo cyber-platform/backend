@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from flask import request
+from flask import g, request
 
 from llm_agent_platform.api.openai.pipeline import resolve_route_provider
 from llm_agent_platform.api.openai.types import UpstreamPreparationError
@@ -75,6 +75,8 @@ def authorize_public_route(
             resolved_group_id,
         )
         raise InvalidPlatformApiKeyError(_INVALID_API_KEY_MESSAGE)
+
+    g.openai_chatgpt_platform_key = key_record
 
     return provider, resolved_group_id, allowed_model_ids
 

@@ -30,6 +30,8 @@ class ChatRequestContext:
     session_id: str | None
     user_prompt_id: str | None
     group_id: str
+    platform_key_id: str | None = None
+    effective_request_params: dict[str, str] | None = None
 
 
 @dataclass
