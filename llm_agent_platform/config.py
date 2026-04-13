@@ -71,7 +71,7 @@ OPENAI_CHATGPT_REQUEST_POLICY_REGISTRY_PATH = _env_str(
 )
 OPENAI_CHATGPT_MODEL_CAPABILITIES_PATH = _env_str(
     "OPENAI_CHATGPT_MODEL_CAPABILITIES_PATH",
-    "provider_configuration/openai-chatgpt/models.json",
+    "llm_agent_platform/provider_configuration/openai-chatgpt/models.json",
 )
 OPENAI_CHATGPT_REQUEST_POLICY_CAPABILITY_VALIDATION_ENABLED = _env_flag(
     "OPENAI_CHATGPT_REQUEST_POLICY_CAPABILITY_VALIDATION_ENABLED",

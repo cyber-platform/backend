@@ -160,7 +160,7 @@ class OpenAIChatGPTRuntimeTests(unittest.TestCase):
             tmp_dir / "openai-chatgpt" / "policy_registry" / "registry.json"
         )
         capabilities_path = (
-            tmp_dir / "provider_configuration" / "openai-chatgpt" / "models.json"
+            tmp_dir / "llm_agent_platform" / "provider_configuration" / "openai-chatgpt" / "models.json"
         )
         with (
             patch("llm_agent_platform.services.account_router.STATE_DIR", str(tmp_dir)),
@@ -457,7 +457,7 @@ class OpenAIChatGPTRuntimeTests(unittest.TestCase):
                 accounts_config_path, self._openai_accounts_config(str(creds_path))
             )
             self._write_json(
-                tmp_dir / "provider_configuration" / "openai-chatgpt" / "models.json",
+                tmp_dir / "llm_agent_platform" / "provider_configuration" / "openai-chatgpt" / "models.json",
                 self._capabilities_payload(),
             )
 
@@ -531,7 +531,7 @@ class OpenAIChatGPTRuntimeTests(unittest.TestCase):
                 accounts_config_path, self._openai_accounts_config(str(creds_path))
             )
             self._write_json(
-                tmp_dir / "provider_configuration" / "openai-chatgpt" / "models.json",
+                tmp_dir / "llm_agent_platform" / "provider_configuration" / "openai-chatgpt" / "models.json",
                 self._capabilities_payload(),
             )
 
@@ -615,7 +615,7 @@ class OpenAIChatGPTRuntimeTests(unittest.TestCase):
                 },
             )
             self._write_json(
-                tmp_dir / "provider_configuration" / "openai-chatgpt" / "models.json",
+                tmp_dir / "llm_agent_platform" / "provider_configuration" / "openai-chatgpt" / "models.json",
                 self._capabilities_payload(),
             )
 
@@ -746,7 +746,7 @@ class OpenAIChatGPTRuntimeTests(unittest.TestCase):
                 accounts_config_path, self._openai_accounts_config(str(creds_path))
             )
             self._write_json(
-                tmp_dir / "provider_configuration" / "openai-chatgpt" / "models.json",
+                tmp_dir / "llm_agent_platform" / "provider_configuration" / "openai-chatgpt" / "models.json",
                 self._capabilities_payload(),
             )
 
@@ -844,7 +844,7 @@ class OpenAIChatGPTRuntimeTests(unittest.TestCase):
                 accounts_config_path, self._openai_accounts_config(str(creds_path))
             )
             self._write_json(
-                tmp_dir / "provider_configuration" / "openai-chatgpt" / "models.json",
+                tmp_dir / "llm_agent_platform" / "provider_configuration" / "openai-chatgpt" / "models.json",
                 self._capabilities_payload(),
             )
 

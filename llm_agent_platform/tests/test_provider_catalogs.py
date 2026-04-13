@@ -210,7 +210,7 @@ class OpenAIChatGPTModelCapabilitiesTests(unittest.TestCase):
 
         with _state_dir() as tmp_dir:
             overlay_path = (
-                tmp_dir / "provider_configuration" / "openai-chatgpt" / "models.json"
+                tmp_dir / "llm_agent_platform" / "provider_configuration" / "openai-chatgpt" / "models.json"
             )
             self._write_json(overlay_path, payload)
 
@@ -252,7 +252,7 @@ class OpenAIChatGPTModelCapabilitiesTests(unittest.TestCase):
     def test_capability_overlay_missing_file_and_missing_record_return_none(self):
         with _state_dir() as tmp_dir:
             overlay_path = (
-                tmp_dir / "provider_configuration" / "openai-chatgpt" / "models.json"
+                tmp_dir / "llm_agent_platform" / "provider_configuration" / "openai-chatgpt" / "models.json"
             )
             service = OpenAIChatGPTModelCapabilitiesService(
                 registry_path=overlay_path,
@@ -285,7 +285,7 @@ class OpenAIChatGPTModelCapabilitiesTests(unittest.TestCase):
     def test_capability_overlay_rejects_unknown_model_and_malformed_parameters(self):
         with _state_dir() as tmp_dir:
             overlay_path = (
-                tmp_dir / "provider_configuration" / "openai-chatgpt" / "models.json"
+                tmp_dir / "llm_agent_platform" / "provider_configuration" / "openai-chatgpt" / "models.json"
             )
             service = OpenAIChatGPTModelCapabilitiesService(
                 registry_path=overlay_path,

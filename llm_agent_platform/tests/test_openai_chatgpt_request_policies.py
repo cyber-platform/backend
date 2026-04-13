@@ -140,7 +140,7 @@ class OpenAIChatGPTRequestPolicyRegistryTests(unittest.TestCase):
                 tmp_dir / "openai-chatgpt" / "policy_registry" / "registry.json"
             )
             model_capabilities_path = (
-                tmp_dir / "provider_configuration" / "openai-chatgpt" / "models.json"
+                tmp_dir / "llm_agent_platform" / "provider_configuration" / "openai-chatgpt" / "models.json"
             )
             credentials_path = (
                 tmp_dir / "openai-chatgpt" / "auth" / "oauth-account.json"
@@ -195,7 +195,7 @@ class OpenAIChatGPTRequestPolicyRegistryTests(unittest.TestCase):
                 tmp_dir / "openai-chatgpt" / "policy_registry" / "registry.json"
             )
             model_capabilities_path = (
-                tmp_dir / "provider_configuration" / "openai-chatgpt" / "models.json"
+                tmp_dir / "llm_agent_platform" / "provider_configuration" / "openai-chatgpt" / "models.json"
             )
             credentials_path = (
                 tmp_dir / "openai-chatgpt" / "auth" / "oauth-account.json"
@@ -304,7 +304,7 @@ class OpenAIChatGPTRequestPolicyRegistryTests(unittest.TestCase):
                 tmp_dir / "openai-chatgpt" / "policy_registry" / "registry.json"
             )
             model_capabilities_path = (
-                tmp_dir / "provider_configuration" / "openai-chatgpt" / "models.json"
+                tmp_dir / "llm_agent_platform" / "provider_configuration" / "openai-chatgpt" / "models.json"
             )
             credentials_path = (
                 tmp_dir / "openai-chatgpt" / "auth" / "oauth-account.json"
@@ -404,7 +404,7 @@ class OpenAIChatGPTRequestPolicyRegistryTests(unittest.TestCase):
                 tmp_dir / "openai-chatgpt" / "policy_registry" / "registry.json"
             )
             model_capabilities_path = (
-                tmp_dir / "provider_configuration" / "openai-chatgpt" / "models.json"
+                tmp_dir / "llm_agent_platform" / "provider_configuration" / "openai-chatgpt" / "models.json"
             )
             credentials_path = (
                 tmp_dir / "openai-chatgpt" / "auth" / "oauth-account.json"
