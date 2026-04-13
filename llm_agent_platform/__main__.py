@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, jsonify
 from llm_agent_platform.core.logging import setup_logging
 from llm_agent_platform.api.admin.routes import admin_bp
 from llm_agent_platform.api.openai.routes import openai_bp
@@ -9,6 +9,12 @@ from llm_agent_platform.api.parity.routes import parity_bp
 logger = setup_logging()
 
 app = Flask(__name__)
+
+
+@app.get("/health")
+def health_check():
+    return jsonify({"status": "ok", "service": "backend"})
+
 
 # Register Blueprints
 app.register_blueprint(admin_bp)

@@ -14,6 +14,7 @@ from llm_agent_platform.__main__ import app
 from llm_agent_platform.services.openai_chatgpt_api_keys import (
     OpenAIChatGPTApiKeyRegistryService,
 )
+from llm_agent_platform.tests.admin_auth_test_utils import install_admin_client_auth
 
 SECRETS_TEST_ROOT = Path("secrets_test")
 
@@ -28,6 +29,7 @@ def _secrets_test_dir():
 class AdminApiKeyTests(unittest.TestCase):
     def setUp(self):
         self.client = app.test_client()
+        install_admin_client_auth(self, self.client)
 
     @staticmethod
     def _write_json(path: Path, payload: dict) -> None:

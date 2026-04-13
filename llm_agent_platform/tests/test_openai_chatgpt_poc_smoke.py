@@ -15,9 +15,10 @@ from llm_agent_platform.services.account_router import quota_account_router
 from llm_agent_platform.services.openai_chatgpt_admin_monitoring import (
     reset_monitoring_caches,
 )
+from llm_agent_platform.tests.admin_auth_test_utils import install_admin_client_auth
 
 SECRETS_TEST_ROOT = Path("secrets_test")
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[4]
 
 
 class FakeResponse:
@@ -55,6 +56,7 @@ def _tmp_state_dir():
 class OpenAIChatGPTPoCSmokeTests(unittest.TestCase):
     def setUp(self):
         self.client = app.test_client()
+        install_admin_client_auth(self, self.client)
         quota_account_router._state.clear()
         quota_account_router._preferred_account_overrides.clear()
         reset_monitoring_caches()
