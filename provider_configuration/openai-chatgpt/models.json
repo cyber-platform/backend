@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "provider_id": "openai-chatgpt",
+  "models": {
+    "gpt-5.4": {
+      "display_name": "GPT-5.4",
+      "parameters": {
+        "reasoning_effort": {
+          "supported": true,
+          "values": ["none", "low", "medium", "high", "xhigh"],
+          "default": "none",
+          "ui_label": "Reasoning level",
+          "description": "Platform-supported reasoning effort values confirmed for the openai-chatgpt provider contract."
+        }
+      },
+      "constraints": [
+        {
+          "kind": "forbid_parameters_when",
+          "when": {
+            "reasoning_effort": ["low", "medium", "high", "xhigh"]
+          },
+          "forbid_parameters": ["temperature", "top_p", "logprobs"],
+          "description": "These parameters are only supported when reasoning effort is none."
+        }
+      ],
+      "raw": {
+        "source": "operational_scope/research/using_gpt-5.4.md"
+      }
+    },
+    "gpt-5.4-mini": {
+      "display_name": "GPT-5.4 Mini",
+      "parameters": {
+        "reasoning_effort": {
+          "supported": true,
+          "values": ["none", "low", "medium", "high", "xhigh"],
+          "default": "none",
+          "ui_label": "Reasoning level",
+          "description": "GPT-5.4 Mini follows the GPT-5.4 family reasoning effort set in the current platform canon."
+        }
+      },
+      "raw": {
+        "source": "operational_scope/research/using_gpt-5.4.md"
+      }
+    },
+    "gpt-5.3-codex": {
+      "display_name": "GPT-5.3 Codex",
+      "parameters": {
+        "reasoning_effort": {
+          "supported": true,
+          "values": ["low", "medium", "high", "xhigh"],
+          "default": "medium",
+          "ui_label": "Reasoning level",
+          "description": "Codex-specific reasoning effort values observed from available research evidence."
+        }
+      },
+      "raw": {
+        "source": "operational_scope/research/using_gpt-5.4.md"
+      }
+    }
+  }
+}
