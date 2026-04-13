@@ -65,9 +65,17 @@ OPENAI_CHATGPT_API_KEYS_REGISTRY_PATH = _env_str(
     "OPENAI_CHATGPT_API_KEYS_REGISTRY_PATH",
     "secrets/openai-chatgpt/api-keys/registry.json",
 )
+OPENAI_CHATGPT_REQUEST_POLICY_REGISTRY_PATH = _env_str(
+    "OPENAI_CHATGPT_REQUEST_POLICY_REGISTRY_PATH",
+    "secrets/openai-chatgpt/policy_registry/registry.json",
+)
 OPENAI_CHATGPT_MODEL_CAPABILITIES_PATH = _env_str(
     "OPENAI_CHATGPT_MODEL_CAPABILITIES_PATH",
     "provider_configuration/openai-chatgpt/models.json",
+)
+OPENAI_CHATGPT_REQUEST_POLICY_CAPABILITY_VALIDATION_ENABLED = _env_flag(
+    "OPENAI_CHATGPT_REQUEST_POLICY_CAPABILITY_VALIDATION_ENABLED",
+    "true",
 )
 JWT_SHARED_SECRET = _env_str("JWT_SHARED_SECRET")
 JWT_ISSUER = _env_str("JWT_ISSUER", "user_service")
