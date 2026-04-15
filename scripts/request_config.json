@@ -1,0 +1,8 @@
+{
+  "base_url": "http://localhost:4000/openai-chatgpt/gpt-free",
+  "model": "gpt-5.4-mini",
+  "api-key":"sk-poc-AvFLyJUmw9Cje_cDjFqHrEvaDSo5jR56",
+  "prompt": "Привет",
+  "max_tokens": 512,
+  "stream": true
+}

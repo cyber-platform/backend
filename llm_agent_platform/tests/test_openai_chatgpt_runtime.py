@@ -156,6 +156,12 @@ class OpenAIChatGPTRuntimeTests(unittest.TestCase):
     @contextmanager
     def _patched_paths(self, tmp_dir: Path, openai_config_path: Path):
         registry_path = tmp_dir / "openai-chatgpt" / "api-keys" / "registry.json"
+        request_policy_path = (
+            tmp_dir / "openai-chatgpt" / "policy_registry" / "registry.json"
+        )
+        capabilities_path = (
+            tmp_dir / "llm_agent_platform" / "provider_configuration" / "openai-chatgpt" / "models.json"
+        )
         with (
             patch("llm_agent_platform.services.account_router.STATE_DIR", str(tmp_dir)),
             patch(
@@ -182,6 +188,22 @@ class OpenAIChatGPTRuntimeTests(unittest.TestCase):
                 "llm_agent_platform.services.openai_chatgpt_api_keys.OPENAI_CHATGPT_API_KEYS_REGISTRY_PATH",
                 str(registry_path),
             ),
+            patch(
+                "llm_agent_platform.config.OPENAI_CHATGPT_REQUEST_POLICY_REGISTRY_PATH",
+                str(request_policy_path),
+            ),
+            patch(
+                "llm_agent_platform.services.openai_chatgpt_request_policies.OPENAI_CHATGPT_REQUEST_POLICY_REGISTRY_PATH",
+                str(request_policy_path),
+            ),
+            patch(
+                "llm_agent_platform.config.OPENAI_CHATGPT_MODEL_CAPABILITIES_PATH",
+                str(capabilities_path),
+            ),
+            patch(
+                "llm_agent_platform.services.openai_chatgpt_model_capabilities.OPENAI_CHATGPT_MODEL_CAPABILITIES_PATH",
+                str(capabilities_path),
+            ),
         ):
             yield
 
@@ -200,6 +222,41 @@ class OpenAIChatGPTRuntimeTests(unittest.TestCase):
                 continue
             events.append(json.loads(raw))
         return events
+
+    @staticmethod
+    def _capabilities_payload() -> dict:
+        return {
+            "version": 1,
+            "provider_id": "openai-chatgpt",
+            "models": {
+                "gpt-5.4": {
+                    "display_name": "GPT-5.4",
+                    "parameters": {
+                        "reasoning_effort": {
+                            "supported": True,
+                            "values": ["none", "low", "medium", "high", "xhigh"],
+                            "default": "none",
+                        }
+                    },
+                    "constraints": [],
+                    "raw": {
+                        "reasoning_effort": ["none", "low", "medium", "high", "xhigh"]
+                    },
+                },
+                "gpt-5.3-codex": {
+                    "display_name": "GPT-5.3 Codex",
+                    "parameters": {
+                        "reasoning_effort": {
+                            "supported": True,
+                            "values": ["low", "medium", "high", "xhigh"],
+                            "default": "medium",
+                        }
+                    },
+                    "constraints": [],
+                    "raw": {"reasoning_effort": ["low", "medium", "high", "xhigh"]},
+                },
+            },
+        }
 
     def test_non_stream_single_mode_uses_private_backend_and_optional_account_id(self):
         with _tmp_state_dir() as tmp_dir:
@@ -380,6 +437,524 @@ class OpenAIChatGPTRuntimeTests(unittest.TestCase):
         self.assertEqual(
             fake_client.post_calls[1]["headers"]["ChatGPT-Account-Id"], "acct-xyz"
         )
+
+    def test_request_without_policy_keeps_pass_through_reasoning_effort(self):
+        with _tmp_state_dir() as tmp_dir:
+            creds_path = tmp_dir / "openai-chatgpt" / "auth" / "oauth-account.json"
+            accounts_config_path = tmp_dir / "openai_accounts_config.json"
+            self._write_json(
+                creds_path,
+                {
+                    "version": 1,
+                    "provider_id": "openai-chatgpt",
+                    "access_token": "token-123",
+                    "refresh_token": "refresh-123",
+                    "token_type": "Bearer",
+                    "expires_at": "2099-01-01T00:00:00Z",
+                },
+            )
+            self._write_json(
+                accounts_config_path, self._openai_accounts_config(str(creds_path))
+            )
+            self._write_json(
+                tmp_dir / "llm_agent_platform" / "provider_configuration" / "openai-chatgpt" / "models.json",
+                self._capabilities_payload(),
+            )
+
+            fake_client = FakeHttpClient(
+                post_responses=[
+                    FakeResponse(
+                        200,
+                        {
+                            "id": "chatcmpl-openai-pass-through",
+                            "object": "chat.completion",
+                            "choices": [
+                                {
+                                    "index": 0,
+                                    "message": {
+                                        "role": "assistant",
+                                        "content": "pass through",
+                                    },
+                                    "finish_reason": "stop",
+                                }
+                            ],
+                            "usage": {
+                                "prompt_tokens": 2,
+                                "completion_tokens": 1,
+                                "total_tokens": 3,
+                            },
+                        },
+                    )
+                ]
+            )
+
+            with (
+                self._patched_paths(tmp_dir, accounts_config_path),
+                patch(
+                    "llm_agent_platform.api.openai.providers.openai_chatgpt.get_http_client",
+                    return_value=fake_client,
+                ),
+            ):
+                api_key = OpenAIChatGPTApiKeyRegistryService().create_key(
+                    group_id="team-a", label="pass-through-test"
+                )["raw_api_key"]
+                response = self.client.post(
+                    "/openai-chatgpt/v1/chat/completions",
+                    json={
+                        "model": "gpt-5.4",
+                        "reasoning_effort": "low",
+                        "messages": [{"role": "user", "content": "hello"}],
+                    },
+                    headers=self._auth_headers(api_key),
+                )
+
+        upstream_payload = fake_client.post_calls[0]["json"]
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(upstream_payload["reasoning"]["effort"], "low")
+
+    def test_request_without_policy_preserves_none_reasoning_effort_for_gpt_5_4(self):
+        with _tmp_state_dir() as tmp_dir:
+            creds_path = tmp_dir / "openai-chatgpt" / "auth" / "oauth-account.json"
+            accounts_config_path = tmp_dir / "openai_accounts_config.json"
+            self._write_json(
+                creds_path,
+                {
+                    "version": 1,
+                    "provider_id": "openai-chatgpt",
+                    "access_token": "token-123",
+                    "refresh_token": "refresh-123",
+                    "token_type": "Bearer",
+                    "expires_at": "2099-01-01T00:00:00Z",
+                },
+            )
+            self._write_json(
+                accounts_config_path, self._openai_accounts_config(str(creds_path))
+            )
+            self._write_json(
+                tmp_dir / "llm_agent_platform" / "provider_configuration" / "openai-chatgpt" / "models.json",
+                self._capabilities_payload(),
+            )
+
+            fake_client = FakeHttpClient(
+                post_responses=[
+                    FakeResponse(
+                        200,
+                        {
+                            "id": "chatcmpl-openai-none",
+                            "object": "chat.completion",
+                            "choices": [
+                                {
+                                    "index": 0,
+                                    "message": {
+                                        "role": "assistant",
+                                        "content": "none kept",
+                                    },
+                                    "finish_reason": "stop",
+                                }
+                            ],
+                            "usage": {
+                                "prompt_tokens": 2,
+                                "completion_tokens": 1,
+                                "total_tokens": 3,
+                            },
+                        },
+                    )
+                ]
+            )
+
+            with (
+                self._patched_paths(tmp_dir, accounts_config_path),
+                patch(
+                    "llm_agent_platform.api.openai.providers.openai_chatgpt.get_http_client",
+                    return_value=fake_client,
+                ),
+            ):
+                api_key = OpenAIChatGPTApiKeyRegistryService().create_key(
+                    group_id="team-a", label="none-pass-through-test"
+                )["raw_api_key"]
+                response = self.client.post(
+                    "/openai-chatgpt/v1/chat/completions",
+                    json={
+                        "model": "gpt-5.4",
+                        "reasoning_effort": "none",
+                        "messages": [{"role": "user", "content": "hello"}],
+                    },
+                    headers=self._auth_headers(api_key),
+                )
+
+        upstream_payload = fake_client.post_calls[0]["json"]
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(upstream_payload["reasoning"]["effort"], "none")
+        self.assertNotIn("include", upstream_payload)
+
+    def test_request_without_policy_keeps_codex_xhigh_reasoning_effort(self):
+        with _tmp_state_dir() as tmp_dir:
+            creds_path = tmp_dir / "openai-chatgpt" / "auth" / "oauth-account.json"
+            accounts_config_path = tmp_dir / "openai_accounts_config.json"
+            self._write_json(
+                creds_path,
+                {
+                    "version": 1,
+                    "provider_id": "openai-chatgpt",
+                    "access_token": "token-123",
+                    "refresh_token": "refresh-123",
+                    "token_type": "Bearer",
+                    "expires_at": "2099-01-01T00:00:00Z",
+                },
+            )
+            self._write_json(
+                accounts_config_path,
+                {
+                    **self._openai_accounts_config(str(creds_path)),
+                    "groups": {
+                        "team-a": {
+                            "accounts": ["acct-1"],
+                            "models": ["gpt-5.4", "gpt-5.4-mini", "gpt-5.3-codex"],
+                        }
+                    },
+                },
+            )
+            self._write_json(
+                tmp_dir / "llm_agent_platform" / "provider_configuration" / "openai-chatgpt" / "models.json",
+                self._capabilities_payload(),
+            )
+
+            fake_client = FakeHttpClient(
+                post_responses=[
+                    FakeResponse(
+                        200,
+                        {
+                            "id": "chatcmpl-openai-codex-xhigh",
+                            "object": "chat.completion",
+                            "choices": [
+                                {
+                                    "index": 0,
+                                    "message": {
+                                        "role": "assistant",
+                                        "content": "xhigh kept",
+                                    },
+                                    "finish_reason": "stop",
+                                }
+                            ],
+                            "usage": {
+                                "prompt_tokens": 2,
+                                "completion_tokens": 1,
+                                "total_tokens": 3,
+                            },
+                        },
+                    )
+                ]
+            )
+
+            with (
+                self._patched_paths(tmp_dir, accounts_config_path),
+                patch(
+                    "llm_agent_platform.api.openai.providers.openai_chatgpt.get_http_client",
+                    return_value=fake_client,
+                ),
+            ):
+                api_key = OpenAIChatGPTApiKeyRegistryService().create_key(
+                    group_id="team-a", label="codex-xhigh-pass-through-test"
+                )["raw_api_key"]
+                response = self.client.post(
+                    "/openai-chatgpt/v1/chat/completions",
+                    json={
+                        "model": "gpt-5.3-codex",
+                        "reasoning_effort": "xhigh",
+                        "messages": [{"role": "user", "content": "hello"}],
+                    },
+                    headers=self._auth_headers(api_key),
+                )
+
+        upstream_payload = fake_client.post_calls[0]["json"]
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(upstream_payload["reasoning"]["effort"], "xhigh")
+        self.assertEqual(upstream_payload["include"], ["reasoning.encrypted_content"])
+
+    def test_request_without_policy_preserves_invalid_reasoning_effort_for_upstream_rejection(
+        self,
+    ):
+        with _tmp_state_dir() as tmp_dir:
+            creds_path = tmp_dir / "openai-chatgpt" / "auth" / "oauth-account.json"
+            accounts_config_path = tmp_dir / "openai_accounts_config.json"
+            self._write_json(
+                creds_path,
+                {
+                    "version": 1,
+                    "provider_id": "openai-chatgpt",
+                    "access_token": "token-123",
+                    "refresh_token": "refresh-123",
+                    "token_type": "Bearer",
+                    "expires_at": "2099-01-01T00:00:00Z",
+                },
+            )
+            self._write_json(
+                accounts_config_path, self._openai_accounts_config(str(creds_path))
+            )
+
+            fake_client = FakeHttpClient(
+                post_responses=[
+                    FakeResponse(
+                        400,
+                        {"error": {"message": "Unsupported reasoning effort: turbo"}},
+                    )
+                ]
+            )
+
+            with (
+                self._patched_paths(tmp_dir, accounts_config_path),
+                patch(
+                    "llm_agent_platform.api.openai.providers.openai_chatgpt.get_http_client",
+                    return_value=fake_client,
+                ),
+            ):
+                api_key = OpenAIChatGPTApiKeyRegistryService().create_key(
+                    group_id="team-a", label="invalid-reasoning-test"
+                )["raw_api_key"]
+                response = self.client.post(
+                    "/openai-chatgpt/v1/chat/completions",
+                    json={
+                        "model": "gpt-5.4",
+                        "reasoning_effort": "turbo",
+                        "messages": [{"role": "user", "content": "hello"}],
+                    },
+                    headers=self._auth_headers(api_key),
+                )
+
+        upstream_payload = fake_client.post_calls[0]["json"]
+        body = json.loads(response.data.decode("utf-8"))
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(upstream_payload["reasoning"]["effort"], "turbo")
+        self.assertIn("Unsupported reasoning effort: turbo", body["error"]["message"])
+
+    def test_request_policy_force_overrides_client_reasoning_effort(self):
+        with _tmp_state_dir() as tmp_dir:
+            creds_path = tmp_dir / "openai-chatgpt" / "auth" / "oauth-account.json"
+            accounts_config_path = tmp_dir / "openai_accounts_config.json"
+            self._write_json(
+                creds_path,
+                {
+                    "version": 1,
+                    "provider_id": "openai-chatgpt",
+                    "access_token": "token-123",
+                    "refresh_token": "refresh-123",
+                    "token_type": "Bearer",
+                    "expires_at": "2099-01-01T00:00:00Z",
+                },
+            )
+            self._write_json(
+                accounts_config_path, self._openai_accounts_config(str(creds_path))
+            )
+            self._write_json(
+                tmp_dir / "llm_agent_platform" / "provider_configuration" / "openai-chatgpt" / "models.json",
+                self._capabilities_payload(),
+            )
+
+            fake_client = FakeHttpClient(
+                post_responses=[
+                    FakeResponse(
+                        200,
+                        {
+                            "id": "chatcmpl-openai-force",
+                            "object": "chat.completion",
+                            "choices": [
+                                {
+                                    "index": 0,
+                                    "message": {
+                                        "role": "assistant",
+                                        "content": "forced",
+                                    },
+                                    "finish_reason": "stop",
+                                }
+                            ],
+                            "usage": {
+                                "prompt_tokens": 2,
+                                "completion_tokens": 1,
+                                "total_tokens": 3,
+                            },
+                        },
+                    )
+                ]
+            )
+
+            with (
+                self._patched_paths(tmp_dir, accounts_config_path),
+                patch(
+                    "llm_agent_platform.api.openai.providers.openai_chatgpt.get_http_client",
+                    return_value=fake_client,
+                ),
+            ):
+                registry = OpenAIChatGPTApiKeyRegistryService()
+                created_key = registry.create_key(group_id="team-a", label="force-test")
+                self._write_json(
+                    tmp_dir / "openai-chatgpt" / "policy_registry" / "registry.json",
+                    {
+                        "version": 1,
+                        "provider_id": "openai-chatgpt",
+                        "policies": [
+                            {
+                                "key_id": created_key["key_id"],
+                                "group_id": "team-a",
+                                "model_overrides": {
+                                    "gpt-5.4": {
+                                        "reasoning_effort": {
+                                            "mode": "force",
+                                            "value": "high",
+                                        }
+                                    }
+                                },
+                                "created_at": "2026-01-01T00:00:00Z",
+                                "updated_at": "2026-01-01T00:00:00Z",
+                            }
+                        ],
+                    },
+                )
+                response = self.client.post(
+                    "/openai-chatgpt/v1/chat/completions",
+                    json={
+                        "model": "gpt-5.4",
+                        "reasoning_effort": "low",
+                        "messages": [{"role": "user", "content": "hello"}],
+                    },
+                    headers=self._auth_headers(created_key["raw_api_key"]),
+                )
+
+        upstream_payload = fake_client.post_calls[0]["json"]
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(upstream_payload["reasoning"]["effort"], "high")
+
+    def test_request_policy_default_if_absent_applies_only_when_client_omits_value(
+        self,
+    ):
+        with _tmp_state_dir() as tmp_dir:
+            creds_path = tmp_dir / "openai-chatgpt" / "auth" / "oauth-account.json"
+            accounts_config_path = tmp_dir / "openai_accounts_config.json"
+            self._write_json(
+                creds_path,
+                {
+                    "version": 1,
+                    "provider_id": "openai-chatgpt",
+                    "access_token": "token-123",
+                    "refresh_token": "refresh-123",
+                    "token_type": "Bearer",
+                    "expires_at": "2099-01-01T00:00:00Z",
+                },
+            )
+            self._write_json(
+                accounts_config_path, self._openai_accounts_config(str(creds_path))
+            )
+            self._write_json(
+                tmp_dir / "llm_agent_platform" / "provider_configuration" / "openai-chatgpt" / "models.json",
+                self._capabilities_payload(),
+            )
+
+            fake_client = FakeHttpClient(
+                post_responses=[
+                    FakeResponse(
+                        200,
+                        {
+                            "id": "chatcmpl-openai-default-1",
+                            "object": "chat.completion",
+                            "choices": [
+                                {
+                                    "index": 0,
+                                    "message": {
+                                        "role": "assistant",
+                                        "content": "defaulted",
+                                    },
+                                    "finish_reason": "stop",
+                                }
+                            ],
+                            "usage": {
+                                "prompt_tokens": 2,
+                                "completion_tokens": 1,
+                                "total_tokens": 3,
+                            },
+                        },
+                    ),
+                    FakeResponse(
+                        200,
+                        {
+                            "id": "chatcmpl-openai-default-2",
+                            "object": "chat.completion",
+                            "choices": [
+                                {
+                                    "index": 0,
+                                    "message": {
+                                        "role": "assistant",
+                                        "content": "client kept",
+                                    },
+                                    "finish_reason": "stop",
+                                }
+                            ],
+                            "usage": {
+                                "prompt_tokens": 2,
+                                "completion_tokens": 1,
+                                "total_tokens": 3,
+                            },
+                        },
+                    ),
+                ]
+            )
+
+            with (
+                self._patched_paths(tmp_dir, accounts_config_path),
+                patch(
+                    "llm_agent_platform.api.openai.providers.openai_chatgpt.get_http_client",
+                    return_value=fake_client,
+                ),
+            ):
+                registry = OpenAIChatGPTApiKeyRegistryService()
+                created_key = registry.create_key(
+                    group_id="team-a", label="default-if-absent-test"
+                )
+                self._write_json(
+                    tmp_dir / "openai-chatgpt" / "policy_registry" / "registry.json",
+                    {
+                        "version": 1,
+                        "provider_id": "openai-chatgpt",
+                        "policies": [
+                            {
+                                "key_id": created_key["key_id"],
+                                "group_id": "team-a",
+                                "model_overrides": {
+                                    "gpt-5.4": {
+                                        "reasoning_effort": {
+                                            "mode": "default_if_absent",
+                                            "value": "medium",
+                                        }
+                                    }
+                                },
+                                "created_at": "2026-01-01T00:00:00Z",
+                                "updated_at": "2026-01-01T00:00:00Z",
+                            }
+                        ],
+                    },
+                )
+                missing_value_response = self.client.post(
+                    "/openai-chatgpt/v1/chat/completions",
+                    json={
+                        "model": "gpt-5.4",
+                        "messages": [{"role": "user", "content": "hello"}],
+                    },
+                    headers=self._auth_headers(created_key["raw_api_key"]),
+                )
+                explicit_value_response = self.client.post(
+                    "/openai-chatgpt/v1/chat/completions",
+                    json={
+                        "model": "gpt-5.4",
+                        "reasoning_effort": "low",
+                        "messages": [{"role": "user", "content": "hello again"}],
+                    },
+                    headers=self._auth_headers(created_key["raw_api_key"]),
+                )
+
+        first_payload = fake_client.post_calls[0]["json"]
+        second_payload = fake_client.post_calls[1]["json"]
+        self.assertEqual(missing_value_response.status_code, 200)
+        self.assertEqual(explicit_value_response.status_code, 200)
+        self.assertEqual(first_payload["reasoning"]["effort"], "medium")
+        self.assertEqual(second_payload["reasoning"]["effort"], "low")
 
     def test_stream_route_emits_openai_chunks_and_usage(self):
         with _tmp_state_dir() as tmp_dir:

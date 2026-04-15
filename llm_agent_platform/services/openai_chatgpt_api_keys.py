@@ -155,6 +155,26 @@ class OpenAIChatGPTApiKeyRegistryService:
             }
         return None
 
+    def get_key_record(self, key_id: str) -> dict[str, Any]:
+        normalized_key_id = key_id.strip()
+        if not normalized_key_id:
+            raise ApiKeyRegistryError("key_id is required")
+
+        with self._lock:
+            payload = self._load_registry_unlocked()
+
+        target = next(
+            (
+                entry
+                for entry in payload["keys"]
+                if entry["key_id"] == normalized_key_id
+            ),
+            None,
+        )
+        if target is None:
+            raise ApiKeyNotFoundError(f"Unknown key_id '{normalized_key_id}'")
+        return dict(target)
+
     def _require_group(self, group_id: str) -> str:
         normalized_group_id = group_id.strip()
         if not normalized_group_id:
